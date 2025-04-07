@@ -65,32 +65,39 @@ const updateFeedback = function (event) {
  */
 const updateTimeSig = function () {
     switch (timeSig.value) {
-        case "1":
+        case "1":   // 4/4
             numBeats = 4;
+            meterType = "simple";
             console.log(`${numBeats} beats`);
             break;
-        case "2":
+        case "2":   // 2/4
             numBeats = 2;
+            meterType = "simple";
             console.log(`${numBeats} beats`);
             break;
-        case "3":
+        case "3":   // 3/4
             numBeats = 3;
+            meterType = "simple";
             console.log(`${numBeats} beats`);
             break;
-        case "4":
+        case "4":   // 5/4
             numBeats = 5;
+            meterType = "simple";
             console.log(`${numBeats} beats`);
             break;
-        case "5":
+        case "5":   // 6/8
             numBeats = 2;
+            meterType = "compound";
             console.log(`${numBeats} beats`);
             break;
-        case "6":
+        case "6":   // 9/8
             numBeats = 3;
+            meterType = "compound";
             console.log(`${numBeats} beats`);
             break;
-        case "7":
+        case "7":   // 12/8
             numBeats = 4;
+            meterType = "compound";
             console.log(`${numBeats} beats`);
             break;
     }
@@ -114,6 +121,7 @@ const mtof = function (midi) {
 
 //----------------------------Define Variables----------------------------
 let numBeats = 4; // This will be determined by Time Signature.
+let meterType = "simple"; // This will be determined by Time Signature.
 let transposition; // This will be determined by Transposition selection.
 let duration; // This will be determined by Time Signature and Tempo selection.
 let attack; // This will be determined by Attack selection.
