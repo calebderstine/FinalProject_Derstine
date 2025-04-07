@@ -14,7 +14,7 @@ export default class Voice {
    * @param {number} maxAmp - The maximum amplitude (typically between 0.0 and 1.0).
    * @param {AudioNode} out - The destination node to connect the voice to.
    */
-  constructor(ctx, freq, attack, decay, sustainTime, release, maxAmp, out) {
+  constructor(ctx, freq, attack, decay, sustainTime, release, maxAmp, out1, out2) {
     // Store constructor parameters
     this.context = ctx;
     this.frequency = freq;
@@ -23,7 +23,8 @@ export default class Voice {
     this.sustainTime = sustainTime;
     this.release = release;
     this.maxAmp = maxAmp;
-    this.output = out;
+    this.output1 = out1;
+    this.output2 = out2;
     this.sustain = 0.8;
   }
 
@@ -45,7 +46,8 @@ export default class Voice {
 
     // Signal routing
     this.osc.connect(this.ampEnv);
-    this.ampEnv.connect(this.output);
+    this.ampEnv.connect(this.output1);
+    this.ampEnv.connect(this.output2);
 
     // Start oscillators
     this.osc.start();
@@ -65,6 +67,8 @@ export default class Voice {
       now + this.attack + this.decay + this.sustainTime + this.release + 0.01
     ); // Stop Oscillator
   }
+// Add disposal functionality to the above function.
+
 
   /**
    * Cleans up and disconnects all audio nodes once the sound has ended.
