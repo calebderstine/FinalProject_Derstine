@@ -3,30 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Generative Backing Track</title>
     <script src="script.js" type="module"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Generative Backing Track</h1>
-    <p>Time Signature<select name="TimeSig" id="TimeSig">
-        <option value="1">4/4</option>
-        <option value="2">2/4</option>
-        <option value="3">3/4</option>
-        <option value="4">5/4</option>
-        <option value="5">6/8</option>
-        <option value="6">9/8</option>
-        <option value="7">12/8</option>
-    </select></p>
-    <p>Tempo <input type="number" id="TempoInput" min="20" max="300" value="120" step="1"> bpm</p>
-    <p>Transposition <input type="number" id="TranspositionInput" min="-11" max="11" value="0" step="1"> semitones</p>
-    <h2>Delay</h2>
-    <p>Delay Time <input type="number" id="DelayInput" min="3" max="1000" value="50" step="1"> ms</p>
-    <p>Feedback <input type="range" id="Feedback" min="0" max="0.7" value="0" step="0.01"></p>
-    <h2>ADSR</h2>
-    <p>Attack <input type="number" id="AttackInput" min="3" max="6000" value="3" step="1"> ms</p>
-    <p>Decay <input type="number" id="DecayInput" min="3" max="4000" value="20" step="1"> ms</p>
-    <p>Release <input type="number" id="ReleaseInput" min="3" max="4000" value="20" step="1"> ms</p>
-    <p>Master Gain <input type="range" id="MasterGain" min="0" max="0.5" value="0.125" step="0.01"> </p>
+    <h1>GENERATIVE BACKING TRACK</h1>
+    <div id="Time&Key">
+        <p>Time Signature<select name="TimeSig" id="TimeSig">
+            <option value="1">4/4</option>
+            <option value="2">2/4</option>
+            <option value="3">3/4</option>
+            <option value="4">5/4</option>
+            <option value="5">6/8</option>
+            <option value="6">9/8</option>
+            <option value="7">12/8</option>
+        </select></p>
+        <p>Tempo <input type="number" id="TempoInput" min="20" max="220" value="120" step="1"> bpm</p>
+        <p>Transposition <input type="number" id="TranspositionInput" min="-11" max="11" value="0" step="1"> semitones</p>
+    </div>
+    <div id="ChordSelection">
+        <button id="I" style="background-color: #FFFAF0">I</button>
+        <button id="i" style="background-color: #FFFAF0">i</button>
+        <button id="iv" style="background-color: #FFFAF0">iv</button>
+        <button id="IV" style="background-color: #FFFAF0">IV</button>
+        <button id="v" style="background-color: #FFFAF0">v</button>
+        <button id="V" style="background-color: #FFFAF0">V</button>
+    </div>
+    <div id="ChordDisplay">
+        <h2>Current Chord</h2>
+        <p id="currentChord">x</p>
+        <h2>Upcoming Chord</h2>
+        <p id="upcomingChord">x</p>
+    </div>
+    <div id="Delay">
+        <h2>Delay</h2>
+        <p>Delay Time <input type="number" id="DelayInput" min="3" max="1000" value="50" step="1"> ms</p>
+        <p>Feedback <input type="range" id="Feedback" min="0" max="0.7" value="0" step="0.01"></p>
+    </div>
+    <div id="ADSR">
+        <h2>ADSR</h2>
+        <p>Attack <input type="number" id="AttackInput" min="3" max="6000" value="3" step="1"> ms</p>
+        <p>Decay <input type="number" id="DecayInput" min="3" max="4000" value="20" step="1"> ms</p>
+        <p>Release <input type="number" id="ReleaseInput" min="3" max="4000" value="20" step="1"> ms</p>
+    </div>
+    <p>Master Gain <input type="range" id="MasterGain" min="0" max="0.3" value="0.125" step="0.01"> </p>
     <button type="button" id="StartStop">Start</button>
 </body>
 </html>

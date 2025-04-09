@@ -66,6 +66,7 @@ export default class Voice {
     this.osc.stop(
       now + this.attack + this.decay + this.sustainTime + this.release + 0.01
     ); // Stop Oscillator
+    //setTimeout(this.dispose, 10);
   }
 // Add disposal functionality to the above function.
 
