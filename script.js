@@ -60,7 +60,7 @@ const updateFeedback = function (event) {
 };
 // Maybe add a low pass filter to the delayed signal
 
-// Define an asynchronous function to lead and play the audio
+// Define an asynchronous function to load and play the audio
 let source;
 const loadPlayMetronome = async ()=> {
     //fetch the audio file - returns a promise (response) so we await its completion
@@ -99,11 +99,15 @@ let sustainTime; // This is determined by the envelope values in order to keep t
 let isPlaying = false;
 let timeout;
 
-const chords = [
-    ["I"], 
-    ["bII", "ii", "IV"], 
-    ["V", "vii*"]
-]; // chords[0] = tonic; chords[1] = subdominant; chords[2] = dominant
+const allChords = [
+    "i", "I", "bII", "ii*", "ii", "II", "III", "III+", "iii", "iv", "IV", "v", "V", "VI", "vi", "VII", "vii*"
+];
+
+const selectedChords = [
+    [], 
+    [], 
+    []
+]; // selectedChords[0] = tonic; selectedChords[1] = subdominant; selectedChords[2] = dominant
 
 /**
  * @constant {Object} chordMap
@@ -113,9 +117,19 @@ const chordMap = {
     'i': [60, 63, 67],
     'I': [60, 64, 67],
     'bII': [61, 65, 68],
+    'ii*': [62, 65, 68],
     'ii': [62, 65, 69],
+    'II': [62, 66, 69],
+    'III': [63, 67, 70],
+    'III+': [63, 67, 71],
+    'iii': [64, 67, 71],
+    'iv': [65, 68, 72],
     'IV': [65, 69, 72],
+    'v': [67, 70, 74],
     'V': [67, 71, 74],
+    'VI': [68, 72, 75],
+    'vi': [69, 72, 76],
+    'VII': [70, 74, 77],
     'vii*': [71, 74, 77],
   };
 
@@ -123,10 +137,10 @@ let currentChord;
 let randomIndex1;
 let randomIndex2;
 
-let voice1 = 60;
-let voice2 = 64;
-let voice3 = 67;
-let voice4 = 72;
+let voice1;
+let voice2;
+let voice3;
+let voice4;
 
 /**
  * @function updateTimeSig
@@ -183,18 +197,18 @@ const mtof = function (midi) {
 };
 
 const chooseChord = ()=> {
-    if (!(chords[0].indexOf(currentChord) == -1)) {
+    if (selectedChords[0].includes(currentChord)) {
         randomIndex1 = Math.floor(Math.random() * 3); // Assigns a random integer from 0 to 2; decides if the chord will be tonic, subdominant, or dominant
-        randomIndex2 = Math.floor(chords[randomIndex1].length * Math.random()); // Assigns a random integer from 0 to 1 less than the length of the array corresponding to randomIndex1; chooses a chord from within either the tonic, subdominant, or dominant array
-        currentChord = chords[randomIndex1][randomIndex2]; // currentChord is assigned to the new chord decided by randomIndex1 and randomIndex2
-    } else if (!(chords[1].indexOf(currentChord) == -1)) {
+        randomIndex2 = Math.floor(selectedChords[randomIndex1].length * Math.random()); // Assigns a random integer from 0 to 1 less than the length of the array corresponding to randomIndex1; chooses a chord from within either the tonic, subdominant, or dominant array
+        currentChord = selectedChords[randomIndex1][randomIndex2]; // currentChord is assigned to the new chord decided by randomIndex1 and randomIndex2
+    } else if (selectedChords[1].includes(currentChord)) {
         randomIndex1 = Math.floor(Math.random() * 2 + 1); // Assigns a random integer from 1 to 2; decides if the chord will be subdominant or dominant
-        randomIndex2 = Math.floor(chords[randomIndex1].length * Math.random()); // Assigns a random integer from 0 to 1 less than the length of the array corresponding to randomIndex1; chooses a chord from within either the subdominant or dominant array
-        currentChord = chords[randomIndex1][randomIndex2];
-    } else if (!(chords[2].indexOf(currentChord) == -1)) {
+        randomIndex2 = Math.floor(selectedChords[randomIndex1].length * Math.random()); // Assigns a random integer from 0 to 1 less than the length of the array corresponding to randomIndex1; chooses a chord from within either the subdominant or dominant array
+        currentChord = selectedChords[randomIndex1][randomIndex2];
+    } else if (selectedChords[2].includes(currentChord)) {
         randomIndex1 = Math.floor(Math.random() * 2) * 2; // Assigns either a 0 or a 2; decides if the chord will be dominant or tonic
-        randomIndex2 = Math.floor(chords[randomIndex1].length * Math.random()); // Assigns a random integer from 0 to 1 less than the length of the array corresponding to randomIndex1; chooses a chord from within either the tonic or dominant array
-        currentChord = chords[randomIndex1][randomIndex2];
+        randomIndex2 = Math.floor(selectedChords[randomIndex1].length * Math.random()); // Assigns a random integer from 0 to 1 less than the length of the array corresponding to randomIndex1; chooses a chord from within either the tonic or dominant array
+        currentChord = selectedChords[randomIndex1][randomIndex2];
     }
     document.getElementById("currentChord").innerText = document.getElementById("upcomingChord").innerText;
     document.getElementById("upcomingChord").innerText = currentChord;
@@ -243,7 +257,8 @@ const startTrack = function () {
         );
         return;
     }; // This prevents the playback loop from starting if the sustain time would be less than 0, which would otherwise break the loop
-    currentChord = chords[0][0];
+    currentChord = selectedChords[0][0];
+    chooseVoicing();
     isPlaying = true;
     const startTime = audioCtx.currentTime;
         // iterate through numBeats
@@ -285,80 +300,40 @@ feedback.addEventListener("input", updateFeedback);
 button.addEventListener("click", startTrack);
 masterGainSlider.addEventListener("input", updateMasterGain);
 
-//Chord Selection Functionality
-// let onI = false;
-// let oni = false;
-// let oniv = false;
-// let onIV = false;
-// let onv = false;
-// let onV = false;
-// document.getElementById("I").addEventListener("click", (event) => {
-//     if (!onI){
-//         // Update button appearance
-//         event.target.style.backgroundColor = "#696969";
-//         onI = true;
-//     } else {
-//         // Update button appearance
-//         event.target.style.backgroundColor = "#FFFAF0";
-//         onI = false;
-//     }
-// });
-// document.getElementById("i").addEventListener("click", (event) => {
-//     if (!oni){
-//         // Update button appearance
-//         event.target.style.backgroundColor = "#696969";
-//         oni = true;
-//     } else {
-//         // Update button appearance
-//         event.target.style.backgroundColor = "#FFFAF0";
-//         oni = false;
-//     }
-// });
-// document.getElementById("iv").addEventListener("click", (event) => {
-//     if (!oniv){
-//         // Update button appearance
-//         event.target.style.backgroundColor = "#696969";
-//         oniv = true;
-//     } else {
-//         // Update button appearance
-//         event.target.style.backgroundColor = "#FFFAF0";
-//         oniv = false;
-//     }
-// });
-// document.getElementById("IV").addEventListener("click", (event) => {
-//     if (!onIV){
-//         // Update button appearance
-//         event.target.style.backgroundColor = "#696969";
-//         onIV = true;
-//     } else {
-//         // Update button appearance
-//         event.target.style.backgroundColor = "#FFFAF0";
-//         onIV = false;
-//     }
-// });
-// document.getElementById("v").addEventListener("click", (event) => {
-//     if (!onv){
-//         // Update button appearance
-//         event.target.style.backgroundColor = "#696969";
-//         onv = true;
-//     } else {
-//         // Update button appearance
-//         event.target.style.backgroundColor = "#FFFAF0";
-//         onv = false;
-//     }
-// });
-// document.getElementById("V").addEventListener("click", (event) => {
-//     if (!onV){
-//         // Update button appearance
-//         event.target.style.backgroundColor = "#696969";
-//         onV = true;
-//     } else {
-//         // Update button appearance
-//         event.target.style.backgroundColor = "#FFFAF0";
-//         onV = false;
-//     }
-// });
-
-// document.querySelectorAll("ChordSelection").addEventListener("click", (event) => {
-//     console.log("hello");
-// });
+//User Chord Selection Functionality
+document.getElementById("ChordSelection").addEventListener("click", (event)=>{
+    let functIndex;
+    if (allChords.includes(`${event.target.innerHTML}`)) {
+        console.log(event.target.innerHTML);
+        switch (event.target.innerHTML) {
+            case 'i': functIndex = 0; break;
+            case 'I': functIndex = 0; break;
+            case 'bII': functIndex = 1; break;
+            case 'ii*': functIndex = 1; break;
+            case 'ii': functIndex = 1; break;
+            case 'II': functIndex = 1; break;
+            case 'III': functIndex = 0; break;
+            case 'III+': functIndex = 2; break;
+            case 'iii': functIndex = 0; break;
+            case 'iv': functIndex = 1; break;
+            case 'IV': functIndex = 1; break;
+            case 'v': functIndex = 2; break;
+            case 'V': functIndex = 2; break;
+            case 'VI': functIndex = 0; break;
+            case 'vi': functIndex = 0; break;
+            case 'VII': functIndex = 2; break;
+            case 'vii*': functIndex = 2; break;
+        }
+        console.log(functIndex);
+        if (selectedChords[functIndex].includes(`${event.target.innerHTML}`)) {
+            console.log("includes");
+            selectedChords[functIndex].splice(selectedChords[functIndex].indexOf(event.target.innerHTML), 1);
+            event.target.style.backgroundColor = "#FFFAF0";
+        } else {
+            console.log("doesn't include");
+            selectedChords[functIndex].push(event.target.innerHTML);
+            event.target.style.backgroundColor = "#696969";
+        }
+        console.log(selectedChords);
+    };
+});
