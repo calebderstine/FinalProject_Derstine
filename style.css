@@ -3,22 +3,56 @@ body {
     
 }
 button {
-    font-family: serif;
+    font-family: monospace;
 }
-#ChordDisplay {
-    float: right;
-    padding: 20px;
-    p {
-        font-family: serif;
-        font-size: 40px;
-        position: relative;
-        left: 50px;
+#TimeKey {
+    position: absolute;
+    padding: 1.3rem;
+    margin: 0.6rem;
+    background: #A9A9A9;
+}
+#ChordSelection {
+    position: absolute;
+    top: 19rem;
+    line-height: 1.9rem;
+    padding: 1.3rem;
+    margin: 0.6rem;
+    background: #A9A9A9;
+    button {
+        font-family:serif;
     }
 }
 #Delay {
-    float:  left;
-    padding: 20px;
+    position: absolute;
+    top: 19rem;
+    left: 17rem;
+    padding: 1.3rem;
+    margin: 0.6rem;
+    background: #A9A9A9;
 }
 #ADSR {
-    padding: 20px;
+    position: absolute;
+    top: 5.5rem;
+    left: 21rem;
+    padding: 1.3rem;
+    margin: 0.6rem;
+    background: #A9A9A9;
+}
+#Master {
+    position: absolute;
+    top: 28rem;
+    left: 16.5rem;
+    padding: 1.3rem;
+    margin: 0.6rem;
+}
+#ChordDisplay {
+    position: absolute;
+    left: 50rem;
+    text-align: center;
+    padding: 1.3rem;
+    margin: 0.6rem;
+    p {
+        font-family: serif;
+        font-size: 4rem;
+    }
 }
