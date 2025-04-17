@@ -74,7 +74,7 @@ const loadPlayMetronome = async (out)=> {
     source = audioCtx.createBufferSource();
     //attach the decoded audio data to the source node
     source.buffer = audioBuffer;
-    //connect the audio source to the master gain (volume control)
+    //connect the audio source to the output
     source.connect(out);
     //start playing the audio immediately
     source.start();
@@ -219,26 +219,68 @@ const chooseChord = ()=> {
     document.getElementById("upcomingChord").innerText = currentChord;
 };
 
-const chooseVoicing2 = ()=> {
-    let currentVoicingClass = currentVoicing.map((num)=>{
-        return num % 12;
+const chooseVoicing3 = ()=>{
+    let newVoicing = [];
+    currentVoicing.forEach((currentTone)=>{
+        let closestTones = [];
+        let difference;
+        // Find the chord tones in their closest octave
+        chordMap[currentChord].forEach((targetTone)=>{
+            for (let n = 0; n < 10; n++) {
+                difference = currentTone - (targetTone + (12*n));
+                console.log(`difference of ${difference}`);
+                if (difference > -7 && difference < 7) {
+                    closestTones.push(targetTone + (12*n));
+                    console.log(`closestTones are ${closestTones}`);
+                    break; // Maybe remove break so that if a targetTone is 6 semitones away from the currentTone, both the lower and higher versions will be added to the closestTones array rather than just the lowest.
+                };
+            };
+        });
+        // Find the closest of the chord tones
+        for (let d = 0, c = false; c == false; d++) {
+            closestTones.forEach((closestTone)=>{ // Maybe use find() // Or make it a for loop; maybe for... of
+                if ((currentTone - closestTone) == d || (currentTone - closestTone)*-1 == d) {
+                    newVoicing.push(currentTone - (currentTone - closestTone)); // After a tone is selected, the for loop must stop, otherwise, every possible chord tone will be added; only four tones should be chosen
+                    c = true; // Sometimes this doesn't work perfectly, and multiple closestTones are added from one currentTone
+                };
+            });
+        };
     });
-    console.log(currentVoicingClass);
+    console.log(`newVoicing Array: ${newVoicing}`);
+    for (let i = 0; i < 4; i++) {
+        currentVoicing[i] = newVoicing[i];
+    };
+}; // BIG ISSUE: If multiple voices end up on the same tone, they will from then on always move identically
+// Add the condition that a voice moves to its second closestTone if its first is already covered +
+// Check at the end that all chord tones have been represented, and if not, restart the loop, starting on a different index
+
+
+const chooseVoicing2 = ()=> {
     let chordVoiced;
-    while (!chordVoiced) {
+    let startIndex = 0;
+    do { // The do while loop lets us check if the current voicing contains the correct chord tones, bypassing the rest of the loop if so.
+        let currentVoicingClass = currentVoicing.map((num)=>{ // This creates a new array of the currentVoicing tones translated to pitch class for comparison to the currentChord pitch class elements.
+            return num % 12;
+        });
         chordVoiced = true;
-        chordMap[currentChord].forEach((value) => {
+        chordMap[currentChord].forEach((value) => { // For each MIDI value (pitch class) of the current chord, check if the current voicing (translated to pitch class) contains that value. If not, set chordVoiced to false, enabling the while loop to run again.
             if (!currentVoicingClass.includes(value)) {
                 chordVoiced = false;
             };
         });
+        if (chordVoiced) { // If the chord is already properly voiced, we don't want the chord tones to change, so we break from the while loop.
+            break;
+        };
         console.log(chordVoiced);
-    };
+        //for (let i = 0; i < 4; i++)
+        for (let d = 0; d < 12; d++) {
 
-    currentVoicing[0] = chordMap[currentChord][0] + 60;
-    currentVoicing[1] = chordMap[currentChord][1] + 60;
-    currentVoicing[2] = chordMap[currentChord][2] + 60;
-    currentVoicing[3] = chordMap[currentChord][0] + 72;
+        };
+        currentVoicing[0] = chordMap[currentChord][Math.floor(Math.random()*3)] + 60;
+        currentVoicing[1] = chordMap[currentChord][Math.floor(Math.random()*3)] + 60;
+        currentVoicing[2] = chordMap[currentChord][Math.floor(Math.random()*3)] + 60;
+        currentVoicing[3] = chordMap[currentChord][Math.floor(Math.random()*3)] + 72;
+    } while (!chordVoiced);
 };
 
 
@@ -260,6 +302,7 @@ const chooseVoicing = ()=>{
 //          of semitones, iterate through each remaining voice and through the currentChord
 //          tones to 
 //(ignore parallel 5ths and 8ves and voice ranges for now)
+//ISSUE: In each iteration of the while loop, the currentVoicing changes, potentially  making the calculations work off of an incorrect or distant chord
 
 /**
  * @function playNote
@@ -327,9 +370,9 @@ const playback = function () {
             playNote(currentVoicing[i]);
         };
         chooseChord();
-        console.log(currentChord);
-        chooseVoicing();
-        console.log(currentVoicing[0], currentVoicing[1], currentVoicing[2], currentVoicing[3]);
+        console.log(`Next Chord: ${currentChord}`);
+        chooseVoicing3();
+        console.log(`Voices: ${currentVoicing[0]}, ${currentVoicing[1]}, ${currentVoicing[2]}, ${currentVoicing[3]}`);
     }, duration * 1000);
 };
 
