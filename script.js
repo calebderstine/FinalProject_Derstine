@@ -219,6 +219,74 @@ const chooseChord = ()=> {
     document.getElementById("upcomingChord").innerText = currentChord;
 };
 
+const voiceOrders = [
+    [0, 1, 2],
+    [0, 2, 1],
+    [1, 2, 0],
+    [1, 0, 2],
+    [2, 0, 1],
+    [2, 1, 0],
+]; // Represents all possible orders of three voices
+
+const voicings = [
+    { voicing: [], totalDistance: undefined },
+    { voicing: [], totalDistance: undefined },
+    { voicing: [], totalDistance: undefined },
+    { voicing: [], totalDistance: undefined },
+    { voicing: [], totalDistance: undefined },
+    { voicing: [], totalDistance: undefined },
+]; // Maybe initialize this with a loop
+
+const chooseVoicing5 = ()=>{
+    // For each order of voices, make each voice move to the closest unrepresented target tone,
+    // calculating and storing in the voicings array the total difference in semitones between 
+    // each current voice and its target tone. Then, find which voicing has the least totalDistance,
+    // and set each current tone to the corresponding tone of the voicing.
+    for (let o = 0; o < 6; o++) { // Choose which nested voiceOrders array
+        for (let i = 0; i < 3; i++) { // Iterate through the voices in the nested voiceOrders array
+
+        }
+    }
+};
+
+const chooseVoicing4 = ()=>{
+    let newVoicing = [];
+    //let newVoicingPcs = [];
+    let totalDistance = 0;
+    currentVoicing.forEach((currentTone)=>{
+        let closestTones = [];
+        let difference;
+        // Find the chord tones in their closest octave
+        chordMap[currentChord].forEach((targetTone)=>{
+            for (let n = 0; n < 10; n++) {
+                difference = currentTone - (targetTone + (12*n));
+                //console.log(`difference of ${difference}`);
+                if (difference > -7 && difference < 7) {
+                    closestTones.push(targetTone + (12*n));
+                    break; // Maybe remove break so that if a targetTone is 6 semitones away from the currentTone, both the lower and higher versions will be added to the closestTones array rather than just the lowest.
+                };
+            };
+        });
+        console.log(`closestTones are ${closestTones}`);
+        // Find the closest of the chord tones
+        for (let d = 0, c = false; c == false; d++) {
+            closestTones.forEach((closestTone)=>{ // Maybe use find() // Or make it a for loop; maybe for... of
+                if (((currentTone - closestTone) == d || (currentTone - closestTone)*-1 == d) && !newVoicing.includes(closestTone)) { // Array.from(newVoicing, (x) => x % 12).includes(closestTone % 12)
+                    newVoicing.push(currentTone - (currentTone - closestTone));
+                    //newVoicingPcs.push((currentTone - (currentTone - closestTone)) % 12);
+                    totalDistance = totalDistance + d;
+                    c = true; // Sometimes this doesn't work perfectly, and multiple closestTones are added from one currentTone
+                };
+            });
+        };
+    });
+    console.log(`newVoicing Array: ${newVoicing}`);
+    console.log(`totalDistance: ${totalDistance}`);
+    for (let i = 0; i < 3; i++) {
+        currentVoicing[i] = newVoicing[i];
+    };
+};
+
 const chooseVoicing3 = ()=>{
     let newVoicing = [];
     currentVoicing.forEach((currentTone)=>{
@@ -239,7 +307,7 @@ const chooseVoicing3 = ()=>{
         // Find the closest of the chord tones
         for (let d = 0, c = false; c == false; d++) {
             closestTones.forEach((closestTone)=>{ // Maybe use find() // Or make it a for loop; maybe for... of
-                if ((currentTone - closestTone) == d || (currentTone - closestTone)*-1 == d) {
+                if (((currentTone - closestTone) == d || (currentTone - closestTone)*-1 == d) && !newVoicing.includes(closestTone)) { // Doesn't account for octaves
                     newVoicing.push(currentTone - (currentTone - closestTone)); // After a tone is selected, the for loop must stop, otherwise, every possible chord tone will be added; only four tones should be chosen
                     c = true; // Sometimes this doesn't work perfectly, and multiple closestTones are added from one currentTone
                 };
@@ -250,59 +318,8 @@ const chooseVoicing3 = ()=>{
     for (let i = 0; i < 4; i++) {
         currentVoicing[i] = newVoicing[i];
     };
-}; // BIG ISSUE: If multiple voices end up on the same tone, they will from then on always move identically
-// Add the condition that a voice moves to its second closestTone if its first is already covered +
-// Check at the end that all chord tones have been represented, and if not, restart the loop, starting on a different index
-
-
-const chooseVoicing2 = ()=> {
-    let chordVoiced;
-    let startIndex = 0;
-    do { // The do while loop lets us check if the current voicing contains the correct chord tones, bypassing the rest of the loop if so.
-        let currentVoicingClass = currentVoicing.map((num)=>{ // This creates a new array of the currentVoicing tones translated to pitch class for comparison to the currentChord pitch class elements.
-            return num % 12;
-        });
-        chordVoiced = true;
-        chordMap[currentChord].forEach((value) => { // For each MIDI value (pitch class) of the current chord, check if the current voicing (translated to pitch class) contains that value. If not, set chordVoiced to false, enabling the while loop to run again.
-            if (!currentVoicingClass.includes(value)) {
-                chordVoiced = false;
-            };
-        });
-        if (chordVoiced) { // If the chord is already properly voiced, we don't want the chord tones to change, so we break from the while loop.
-            break;
-        };
-        console.log(chordVoiced);
-        //for (let i = 0; i < 4; i++)
-        for (let d = 0; d < 12; d++) {
-
-        };
-        currentVoicing[0] = chordMap[currentChord][Math.floor(Math.random()*3)] + 60;
-        currentVoicing[1] = chordMap[currentChord][Math.floor(Math.random()*3)] + 60;
-        currentVoicing[2] = chordMap[currentChord][Math.floor(Math.random()*3)] + 60;
-        currentVoicing[3] = chordMap[currentChord][Math.floor(Math.random()*3)] + 72;
-    } while (!chordVoiced);
 };
 
-
-
-const chooseVoicing = ()=>{
-    currentVoicing[0] = chordMap[currentChord][0] + 60;
-    currentVoicing[1] = chordMap[currentChord][1] + 60;
-    currentVoicing[2] = chordMap[currentChord][2] + 60;
-    currentVoicing[3] = chordMap[currentChord][0] + 72;
-};
-
-//Async Function
-//Step 1    keep shared notes?
-//Step 2    enter a for loop with the condition that an array of the four voices !includes
-//          all elements of the currentChord array (will repeat until all chord tones are
-//          represented; will also be bypassed if the chord remains the same); for each new
-//          iteration, add 1 to a value that will represent the starting index of iteration
-//Step 3    using a for (let k = 0(or 1?); k < 12(or 6?); k++), where k represents a distance
-//          of semitones, iterate through each remaining voice and through the currentChord
-//          tones to 
-//(ignore parallel 5ths and 8ves and voice ranges for now)
-//ISSUE: In each iteration of the while loop, the currentVoicing changes, potentially  making the calculations work off of an incorrect or distant chord
 
 /**
  * @function playNote
@@ -342,7 +359,6 @@ document.getElementById("StartStop").addEventListener("click", ()=>{
     currentVoicing[0] = chordMap[currentChord][0] + 60;
     currentVoicing[1] = chordMap[currentChord][1] + 60;
     currentVoicing[2] = chordMap[currentChord][2] + 60;
-    currentVoicing[3] = chordMap[currentChord][0] + 72;
     isPlaying = true;
         for (let i = 0; i < numBeats; i++) {
             timeout = setTimeout(()=>{
@@ -366,13 +382,13 @@ const playback = function () {
                 loadPlayMetronome(subdivisionGain);
               }, (duration/numBeats)/subdivision * i * 1000)
         };
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 3; i++) {
             playNote(currentVoicing[i]);
         };
         chooseChord();
         console.log(`Next Chord: ${currentChord}`);
-        chooseVoicing3();
-        console.log(`Voices: ${currentVoicing[0]}, ${currentVoicing[1]}, ${currentVoicing[2]}, ${currentVoicing[3]}`);
+        chooseVoicing4();
+        console.log(`Voices: ${currentVoicing[0]}, ${currentVoicing[1]}, ${currentVoicing[2]}`);
     }, duration * 1000);
 };
 
