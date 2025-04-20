@@ -231,6 +231,8 @@ const chooseChord = ()=> {
     document.getElementById("upcomingChord").innerText = currentChord;
 };
 
+//--------------------------------Voice Leading--------------------------------
+
 const voiceOrders = [
     [0, 1, 2],
     [0, 2, 1],
@@ -238,8 +240,9 @@ const voiceOrders = [
     [1, 0, 2],
     [2, 0, 1],
     [2, 1, 0],
-]; // Represents all possible orders of three voices
+]; // Represents all possible orders of three voices. Each element of each nested array represents an index for/of currentChord
 
+// This is where each possible voicing and its total distance will be stored
 const voicings = [
     { voicing: [], totalDistance: undefined },
     { voicing: [], totalDistance: undefined },
@@ -247,21 +250,64 @@ const voicings = [
     { voicing: [], totalDistance: undefined },
     { voicing: [], totalDistance: undefined },
     { voicing: [], totalDistance: undefined },
-]; // Maybe initialize this with a loop
+]; // Maybe initialize this with a loop + Should this be inside the chooseVoicing function?
 
-const chooseVoicing5 = ()=>{
+const chooseVoicing2 = ()=>{ // Maybe this should be async?
     // For each order of voices, make each voice move to the closest unrepresented target tone,
     // calculating and storing in the voicings array the total difference in semitones between 
     // each current voice and its target tone. Then, find which voicing has the least totalDistance,
     // and set each current tone to the corresponding tone of the voicing.
     for (let o = 0; o < 6; o++) { // Choose which nested voiceOrders array
+        let newVoicing = [];
+        newVoicing.length = 0; // Is this necessary?
+        let totalDistance = 0;
         for (let i = 0; i < 3; i++) { // Iterate through the voices in the nested voiceOrders array
-
-        }
-    }
+            let currentTone = currentVoicing[voiceOrders[o][i]];
+            let closestTones = [];
+            let difference;
+            // Find the chord tones in their closest octave
+            chordMap[currentChord].forEach((targetTone)=>{ // For each tone of the chord we're moving to
+                for (let n = 0; n < 10; n++) {
+                    difference = currentTone - (targetTone + (12*n)); // Starting from the lowest MIDI octave, iterates through the first ten octaves
+                    //console.log(`difference of ${difference}`);
+                    if (difference > -7 && difference < 7) { // Checks if the target tone in the current octave is within a tritone of the current tone; The closest version of a given pitch class is never more than 6 semitones away
+                        closestTones.push(targetTone + (12*n));
+                    }; 
+                };
+            }); // Compiles an array of the target chord tones in the octaves closest to the current tone; Will typically be 3, but may be 4 in the case that the distance is 6 semitones to a target chord tone
+            console.log(`closestTones are ${closestTones}`);
+            // Find the closest of the chord tones
+            for (let d = 0, c = false; c == false; d++) { // Starting from a distance of 0 semitones and increasing by 1 each time, checks if each target tone is that number of semitones away from the current tone, adding it to the newVoicing array if so and skipping the rest of the for loop
+                closestTones.forEach((closestTone)=>{ // Maybe use find() // Or make it a for loop; maybe for... of
+                    if (((currentTone - closestTone) == d || (currentTone - closestTone)*-1 == d) && !newVoicing.includes(closestTone)) { // Array.from(newVoicing, (x) => x % 12).includes(closestTone % 12)
+                        newVoicing.push(currentTone - (currentTone - closestTone));
+                        totalDistance = totalDistance + d;
+                        c = true; // Sometimes this doesn't work perfectly, and multiple closestTones are added from one currentTone
+                    };
+                });
+            };
+        };
+        // Store voicing and its totalDistance in voicings array; from newVoicing and totalDistance
+        voicings[o].voicing = newVoicing;
+        voicings[o].totalDistance = totalDistance;
+    };
+    // Find array with least totalDistance and set currentVoicing to it
+    console.log(voicings);
+    let smallestDistance = Math.min(
+        voicings[0].totalDistance,
+        voicings[1].totalDistance,
+        voicings[2].totalDistance,
+        voicings[3].totalDistance,
+        voicings[4].totalDistance,
+        voicings[5].totalDistance
+    );
+    console.log(smallestDistance);
+    const hasSmallestDistance = (element) => element.totalDistance == smallestDistance;
+    let bestVoicingIndex = voicings.findIndex(hasSmallestDistance);
+    currentVoicing = voicings[bestVoicingIndex].voicing;
 };
 
-const chooseVoicing4 = ()=>{
+const chooseVoicing1 = ()=>{
     let newVoicing = [];
     //let newVoicingPcs = [];
     let totalDistance = 0;
@@ -295,39 +341,6 @@ const chooseVoicing4 = ()=>{
     console.log(`newVoicing Array: ${newVoicing}`);
     console.log(`totalDistance: ${totalDistance}`);
     for (let i = 0; i < 3; i++) {
-        currentVoicing[i] = newVoicing[i];
-    };
-};
-
-const chooseVoicing3 = ()=>{
-    let newVoicing = [];
-    currentVoicing.forEach((currentTone)=>{
-        let closestTones = [];
-        let difference;
-        // Find the chord tones in their closest octave
-        chordMap[currentChord].forEach((targetTone)=>{
-            for (let n = 0; n < 10; n++) {
-                difference = currentTone - (targetTone + (12*n));
-                console.log(`difference of ${difference}`);
-                if (difference > -7 && difference < 7) {
-                    closestTones.push(targetTone + (12*n));
-                    console.log(`closestTones are ${closestTones}`);
-                    break; // Maybe remove break so that if a targetTone is 6 semitones away from the currentTone, both the lower and higher versions will be added to the closestTones array rather than just the lowest.
-                };
-            };
-        });
-        // Find the closest of the chord tones
-        for (let d = 0, c = false; c == false; d++) {
-            closestTones.forEach((closestTone)=>{ // Maybe use find() // Or make it a for loop; maybe for... of
-                if (((currentTone - closestTone) == d || (currentTone - closestTone)*-1 == d) && !newVoicing.includes(closestTone)) { // Doesn't account for octaves
-                    newVoicing.push(currentTone - (currentTone - closestTone)); // After a tone is selected, the for loop must stop, otherwise, every possible chord tone will be added; only four tones should be chosen
-                    c = true; // Sometimes this doesn't work perfectly, and multiple closestTones are added from one currentTone
-                };
-            });
-        };
-    });
-    console.log(`newVoicing Array: ${newVoicing}`);
-    for (let i = 0; i < 4; i++) {
         currentVoicing[i] = newVoicing[i];
     };
 };
@@ -415,7 +428,7 @@ const playback = function () {
         };
         chooseChord();
         console.log(`Next Chord: ${currentChord}`);
-        chooseVoicing4();
+        chooseVoicing2();
         console.log(`Voices: ${currentVoicing[0]}, ${currentVoicing[1]}, ${currentVoicing[2]}`);
     }, duration * 1000);
 };
