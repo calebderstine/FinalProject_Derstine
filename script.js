@@ -105,7 +105,9 @@ let release; // This will be determined by Release selection.
 let sustainTime; // This is determined by the envelope values in order to keep the note duration consistent regardless of ADSR values.
 
 let isPlaying = false;
-let timeout;
+let playbackTimer;
+let pulseTimer;
+let subdTimer;
 
 const allChords = [
     "i", "I", "bII", "ii*", "ii", "II", "III", "III+", "iii", "iv", "IV", "v", "V", "VI", "vi", "VII", "vii*"
@@ -336,10 +338,14 @@ const playNote = function (note) {
  * @description Will use a for loop to run through the process of choosing a chord, choosing the voicing and assigning notes to each voice, and starting the oscillators before repeating after the specified duration.
  * This function will call other functions for each specific task.
  */
-document.getElementById("StartStop").addEventListener("click", ()=>{
+document.getElementById("StartStop").addEventListener("click", (event)=>{
     if (isPlaying) {
-        clearTimeout(timeout); // Clears all timeouts because all timeouts share this same ID
-        isPlaying = false;
+        clearTimeout(playbackTimer);
+        clearTimeout(pulseTimer);
+        clearTimeout(subdTimer); // Stops and clears the timeouts for the metronome and chord playback
+        event.target.style.border = "0.1rem solid #04AA6D";
+        event.target.innerHTML = "Start";
+        isPlaying = false; // isPlaying is set to false so that parameters can be changed and the playback restarted
         return;
     }; // If track is playing, stops track and prevents the rest of the function from executing.
     duration = numBeats*(60/tempoInput.value); // Duration value is set related to Time Signature and Tempo
@@ -349,19 +355,31 @@ document.getElementById("StartStop").addEventListener("click", ()=>{
     sustainTime = duration - attack - decay - release; // Any time remaining from the duration after the Attack, Decay, and Release is set to the time the note sustains
     transposition = parseInt(transpositionInput.value); // Transposition value is set to the value in the corresponding HTML input box // Might have to use parseInt()
     // By setting these values only when we press play, we ensure the values don't change mid-playback and break the playback loop
+    if (selectedChords[0].length == 0 || selectedChords[1].length == 0 || selectedChords[2].length == 0) {
+        console.log(
+            "Please choose at least one tonic chord, one subdominant chord, and one dominant chord"
+        );
+        document.getElementById("ErrorMessage").innerText = "Please choose at least one tonic chord, one subdominant chord, and one dominant chord";
+        setTimeout(()=>{document.getElementById("ErrorMessage").innerText = ""}, 3000);
+        return;
+    }; // This prevents the playback loop from starting and outputs a message to the user if at least one of every category of chord isn't selected, which would otherwise break the loop
     if (sustainTime < 0) {
         console.log(
             "Decrease Attack, Decay, or Release time OR Decrease tempo" // MAKE IT OUTPUT A MESSAGE TO THE USER
         );
+        document.getElementById("ErrorMessage").innerText = "Decrease Attack, Decay, or Release time OR Decrease tempo";
+        setTimeout(()=>{document.getElementById("ErrorMessage").innerText = ""}, 3000);
         return;
-    }; // This prevents the playback loop from starting if the sustain time would be less than 0, which would otherwise break the loop
+    }; // This prevents the playback loop from starting and outputs a message to the user if the sustain time would be less than 0, which would otherwise break the loop
+    event.target.style.border = "0.1rem solid #ff0000";
+    event.target.innerHTML = "Stop";
+    isPlaying = true;
     currentChord = selectedChords[0][0];
     currentVoicing[0] = chordMap[currentChord][0] + 60;
     currentVoicing[1] = chordMap[currentChord][1] + 60;
     currentVoicing[2] = chordMap[currentChord][2] + 60;
-    isPlaying = true;
         for (let i = 0; i < numBeats; i++) {
-            timeout = setTimeout(()=>{
+            pulseTimer = setTimeout(()=>{
                 loadPlayMetronome(pulseGain);
               }, (duration/numBeats) * i * 1000)
         };
@@ -370,15 +388,15 @@ document.getElementById("StartStop").addEventListener("click", ()=>{
 });
 
 const playback = function () {
-    timeout = setTimeout(()=>{
+    playbackTimer = setTimeout(()=>{
         playback();
         for (let i = 0; i < numBeats; i++) {
-            timeout = setTimeout(()=>{
+            pulseTimer = setTimeout(()=>{
                 loadPlayMetronome(pulseGain);
               }, (duration/numBeats) * i * 1000)
         };
         for (let i = 0; i < (numBeats*subdivision); i++) {
-            timeout = setTimeout(()=>{
+            subdTimer = setTimeout(()=>{
                 loadPlayMetronome(subdivisionGain);
               }, (duration/numBeats)/subdivision * i * 1000)
         };
@@ -395,7 +413,7 @@ const playback = function () {
 //User Chord Selection Functionality
 document.getElementById("ChordSelection").addEventListener("click", (event)=>{
     let functIndex;
-    if (allChords.includes(`${event.target.innerHTML}`)) {
+    if (allChords.includes(`${event.target.innerHTML}`) && isPlaying == false) {
         switch (event.target.innerHTML) {
             case 'i': functIndex = 0; break;
             case 'I': functIndex = 0; break;
@@ -418,9 +436,11 @@ document.getElementById("ChordSelection").addEventListener("click", (event)=>{
         if (selectedChords[functIndex].includes(`${event.target.innerHTML}`)) {
             selectedChords[functIndex].splice(selectedChords[functIndex].indexOf(event.target.innerHTML), 1);
             event.target.style.backgroundColor = "#FFFAF0";
+            event.target.style.color = "#000000";
         } else {
             selectedChords[functIndex].push(event.target.innerHTML);
             event.target.style.backgroundColor = "#696969";
+            event.target.style.color = "#FFFFFF";
         }
     };
 });
