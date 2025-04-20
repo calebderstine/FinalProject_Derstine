@@ -21,12 +21,6 @@ let releaseInput = document.getElementById("ReleaseInput");
  */
 const audioCtx = new AudioContext();
 
-// /**
-//  * @constant {Object} activeVoices
-//  * @description Stores currently active voices, indexed by MIDI note number.
-//  */
-// const activeVoices = {};
-
 /**
  * @constant {GainNode} masterGain
  * @description Master gain control for the backing track.
@@ -55,30 +49,46 @@ document.getElementById("Feedback").addEventListener("input", (event)=>{
 }); // Delay Feedback control
 // Maybe add a low pass filter to the delayed signal
 
-// Metronome
+//------------------------------Metronome-----------------------------------
 const pulseGain = audioCtx.createGain();
 const subdivisionGain = audioCtx.createGain();
 pulseGain.gain.value = 1;
 subdivisionGain.gain.value = 0;
-// Define an asynchronous function to load and play the audio
-let source;
-const loadPlayMetronome = async (out)=> {
-    //fetch the audio file - returns a promise (response) so we await its completion
-    const file = await fetch("metronome.mp3");
-    //convert the fetched file into an arraybuffer (raw binary data)
-    //await because this operation takes time
-    const arrayBuffer = await file.arrayBuffer();
-    //decode the arrayBuffer into an audio buffer that Web Audio can use
-    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-    //create an audio buffer source node - this will play the sound
-    source = audioCtx.createBufferSource();
-    //attach the decoded audio data to the source node
-    source.buffer = audioBuffer;
-    //connect the audio source to the output
+
+// Metronome Play Function
+const playMetronome = function(out){
+    let source = audioCtx.createBufferSource();
+    source.onended = ()=>{
+        source.disconnect();
+        source = null;
+    }
+
+    // Attach the decoded audio data to the source node
+    source.buffer = metronomeAudioBuffer;
+
+    // Connect the audio source to the master gain (volume control)
     source.connect(out);
-    //start playing the audio immediately
+
+    // Start playing the audio immediately
     source.start();
 };
+
+// Load Metronome Audio File
+const loadMetronome = async function () {
+    // Fetch the audio file — returns a Promise, so we await its completion
+    const file = await fetch("metronome.mp3");
+
+    // Convert the fetched file into an ArrayBuffer (raw binary data)
+    // Await because this operation takes time
+    const arrayBuffer = await file.arrayBuffer();
+
+    // Decode the ArrayBuffer into an audio buffer that Web Audio can use
+    // Await because decoding also takes time
+    return await audioCtx.decodeAudioData(arrayBuffer);
+};
+const metronomeAudioBuffer = await loadMetronome();
+
+// User control over metronome gains
 document.getElementById("PulseGain").addEventListener("input", (event)=>{
     pulseGain.gain.linearRampToValueAtTime(event.target.value, audioCtx.currentTime + 0.4);
 }); // Pulse Gain control
@@ -380,7 +390,7 @@ document.getElementById("StartStop").addEventListener("click", (event)=>{
     currentVoicing[2] = chordMap[currentChord][2] + 60;
         for (let i = 0; i < numBeats; i++) {
             pulseTimer = setTimeout(()=>{
-                loadPlayMetronome(pulseGain);
+                playMetronome(pulseGain);
               }, (duration/numBeats) * i * 1000)
         };
         console.log(currentChord);
@@ -392,12 +402,12 @@ const playback = function () {
         playback();
         for (let i = 0; i < numBeats; i++) {
             pulseTimer = setTimeout(()=>{
-                loadPlayMetronome(pulseGain);
+                playMetronome(pulseGain);
               }, (duration/numBeats) * i * 1000)
         };
         for (let i = 0; i < (numBeats*subdivision); i++) {
             subdTimer = setTimeout(()=>{
-                loadPlayMetronome(subdivisionGain);
+                playMetronome(subdivisionGain);
               }, (duration/numBeats)/subdivision * i * 1000)
         };
         for (let i = 0; i < 3; i++) {
