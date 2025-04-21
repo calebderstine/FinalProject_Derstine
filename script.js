@@ -1,5 +1,3 @@
-// CHECK OUT tonal.js LIBRARY
-
 import Voice from "./Voice.js";
 
 //--------------------------Retrieve HTML Elements--------------------------
@@ -278,13 +276,14 @@ const chooseVoicing2 = ()=>{ // Maybe this should be async?
             console.log(`closestTones are ${closestTones}`);
             // Find the closest of the chord tones
             for (let d = 0, c = false; c == false; d++) { // Starting from a distance of 0 semitones and increasing by 1 each time, checks if each target tone is that number of semitones away from the current tone, adding it to the newVoicing array if so and skipping the rest of the for loop
-                closestTones.forEach((closestTone)=>{ // Maybe use find() // Or make it a for loop; maybe for... of
-                    if (((currentTone - closestTone) == d || (currentTone - closestTone)*-1 == d) && !newVoicing.includes(closestTone)) { // Array.from(newVoicing, (x) => x % 12).includes(closestTone % 12)
-                        newVoicing.push(currentTone - (currentTone - closestTone));
+                for (let i = 0; i < closestTones.length; i++) {
+                    if (((currentTone - closestTones[i]) == d || (currentTone - closestTones[i])*-1 == d) && !Array.from(newVoicing, (x) => x % 12).includes(closestTones[i] % 12)) { // !Array.from(newVoicing, (x) => x % 12).includes(closestTones[i] % 12)  // !newVoicing.includes(closestTones[i])
+                        newVoicing.push(currentTone - (currentTone - closestTones[i]));
                         totalDistance = totalDistance + d;
-                        c = true; // Sometimes this doesn't work perfectly, and multiple closestTones are added from one currentTone
+                        c = true;
+                        break;
                     };
-                });
+                };
             };
         };
         // Store voicing and its totalDistance in voicings array; from newVoicing and totalDistance
@@ -328,14 +327,14 @@ const chooseVoicing1 = ()=>{
         console.log(`closestTones are ${closestTones}`);
         // Find the closest of the chord tones
         for (let d = 0, c = false; c == false; d++) {
-            closestTones.forEach((closestTone)=>{ // Maybe use find() // Or make it a for loop; maybe for... of
-                if (((currentTone - closestTone) == d || (currentTone - closestTone)*-1 == d) && !newVoicing.includes(closestTone)) { // Array.from(newVoicing, (x) => x % 12).includes(closestTone % 12)
-                    newVoicing.push(currentTone - (currentTone - closestTone));
-                    //newVoicingPcs.push((currentTone - (currentTone - closestTone)) % 12);
+            for (let i = 0; i < closestTones.length; i++) {
+                if (((currentTone - closestTones[i]) == d || (currentTone - closestTones[i])*-1 == d) && !Array.from(newVoicing, (x) => x % 12).includes(closestTones[i] % 12)) { // !Array.from(newVoicing, (x) => x % 12).includes(closestTones[i] % 12)  // !newVoicing.includes(closestTones[i])
+                    newVoicing.push(currentTone - (currentTone - closestTones[i]));
                     totalDistance = totalDistance + d;
-                    c = true; // Sometimes this doesn't work perfectly, and multiple closestTones are added from one currentTone
+                    c = true;
+                    break;
                 };
-            });
+            };
         };
     });
     console.log(`newVoicing Array: ${newVoicing}`);
@@ -379,17 +378,11 @@ document.getElementById("StartStop").addEventListener("click", (event)=>{
     transposition = parseInt(transpositionInput.value); // Transposition value is set to the value in the corresponding HTML input box // Might have to use parseInt()
     // By setting these values only when we press play, we ensure the values don't change mid-playback and break the playback loop
     if (selectedChords[0].length == 0 || selectedChords[1].length == 0 || selectedChords[2].length == 0) {
-        console.log(
-            "Please choose at least one tonic chord, one subdominant chord, and one dominant chord"
-        );
         document.getElementById("ErrorMessage").innerText = "Please choose at least one tonic chord, one subdominant chord, and one dominant chord";
         setTimeout(()=>{document.getElementById("ErrorMessage").innerText = ""}, 3000);
         return;
     }; // This prevents the playback loop from starting and outputs a message to the user if at least one of every category of chord isn't selected, which would otherwise break the loop
     if (sustainTime < 0) {
-        console.log(
-            "Decrease Attack, Decay, or Release time OR Decrease tempo" // MAKE IT OUTPUT A MESSAGE TO THE USER
-        );
         document.getElementById("ErrorMessage").innerText = "Decrease Attack, Decay, or Release time OR Decrease tempo";
         setTimeout(()=>{document.getElementById("ErrorMessage").innerText = ""}, 3000);
         return;
@@ -398,9 +391,9 @@ document.getElementById("StartStop").addEventListener("click", (event)=>{
     event.target.innerHTML = "Stop";
     isPlaying = true;
     currentChord = selectedChords[0][0];
-    currentVoicing[0] = chordMap[currentChord][0] + 60;
-    currentVoicing[1] = chordMap[currentChord][1] + 60;
-    currentVoicing[2] = chordMap[currentChord][2] + 60;
+    for (let i = 0; i < 3; i++) {
+        currentVoicing[i] = chordMap[currentChord][i] + 60;
+    };
         for (let i = 0; i < numBeats; i++) {
             pulseTimer = setTimeout(()=>{
                 playMetronome(pulseGain);
@@ -429,7 +422,7 @@ const playback = function () {
         chooseChord();
         console.log(`Next Chord: ${currentChord}`);
         chooseVoicing2();
-        console.log(`Voices: ${currentVoicing[0]}, ${currentVoicing[1]}, ${currentVoicing[2]}`);
+        setTimeout(()=>{console.log(`Voices: ${currentVoicing[0]}, ${currentVoicing[1]}, ${currentVoicing[2]}`)}, 50);
     }, duration * 1000);
 };
 
