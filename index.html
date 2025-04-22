@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>GENERATIVE BACKING TRACK</h1>
+    <h1 id="Title">GENERATIVE BACKING TRACK</h1>
     <div id="TimeKey">
         <p>Time Signature<select name="TimeSig" id="TimeSig">
             <option value="1">4/4</option>
@@ -45,11 +45,13 @@
             <button id="vi" style="background-color: #FFFAF0">vi</button>
             <button id="VII" style="background-color: #FFFAF0">VII</button>
             <button id="vii*" style="background-color: #FFFAF0">vii*</button>
+            <p>Openness <input type="range" id="Openness" class="slider" min="0" max="4" value="0" step="2"></p>
     </div>
     <div id="Delay">
         <h2>Delay</h2>
         <p>Delay Time <input type="number" id="DelayInput" min="3" max="1000" value="50" step="1"> ms</p>
         <p>Feedback <input type="range" id="Feedback" class="slider" min="0" max="0.7" value="0" step="0.01"></p>
+        <p>Low-pass <input type="range" id="DelayLowpass" class="slider" min="100" max="8000" value="3000" step="10"></p>
     </div>
     <div id="ADSR">
         <h2>ADSR</h2>
@@ -58,6 +60,8 @@
         <p>Release <input type="number" id="ReleaseInput" min="3" max="4000" value="20" step="1"> ms</p>
     </div>
     <div id="Master">
+        <h2>Master</h2>
+        <p>Low-Pass <input type="range" id="MasterLowpass" class="slider" min="400" max="10000" value="3800" step="10"> </p>
         <p>Master Gain <input type="range" id="MasterGain" class="slider" min="0" max="0.2" value="0.1" step="0.01"> </p>
         <button type="button" id="StartStop">Start</button>
     </div>

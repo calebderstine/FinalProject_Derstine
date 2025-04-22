@@ -24,17 +24,29 @@ button {
     background: #228B22;
     cursor: pointer;
 }
+#Title {
+    position: absolute;
+    top: -0.2rem;
+    left: 1rem;
+    padding: 0.5rem;
+    width: 76rem;
+    background: #A9A9A9;
+}
 #TimeKey {
     position: absolute;
+    top: 4rem;
+    left: 0.4rem;
     padding: 1.3rem;
     margin: 0.6rem;
     background: #A9A9A9;
 }
 #ChordSelection {
     position: absolute;
-    top: 19rem;
+    top: 18rem;
+    left: 0.4rem;
     line-height: 1.9rem;
     padding: 1.3rem;
+    padding-bottom: 0.5rem;
     margin: 0.6rem;
     background: #A9A9A9;
     button {
@@ -43,7 +55,7 @@ button {
 }
 #Delay {
     position: absolute;
-    top: 19rem;
+    top: 18rem;
     left: 17rem;
     padding: 1.3rem;
     margin: 0.6rem;
@@ -51,21 +63,23 @@ button {
 }
 #ADSR {
     position: absolute;
-    top: 5.5rem;
-    left: 21rem;
+    top: 4rem;
+    left: 20.7rem;
     padding: 1.3rem;
+    padding-bottom: 1.96rem;
     margin: 0.6rem;
     background: #A9A9A9;
 }
 #Master {
     position: absolute;
-    top: 28rem;
-    left: 16.5rem;
+    top: 18rem;
+    left: 32.9rem;
     padding: 1.3rem;
     margin: 0.6rem;
+    background: #A9A9A9;
     button {
         background-color: #FFFFFF;
-        border: 0.1rem solid #04AA6D;
+        border: 0.15rem solid #04AA6D;
         border-radius: 10%;
         color: #000000;
         text-align: center;
@@ -80,7 +94,8 @@ button {
 }
 #ChordDisplay {
     position: absolute;
-    left: 50rem;
+    top: 4rem;
+    left: 58rem; /* 50rem */
     text-align: center;
     padding: 1.3rem;
     margin: 0.6rem;

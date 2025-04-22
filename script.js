@@ -6,6 +6,7 @@ let transpositionInput = document.getElementById("TranspositionInput");
 let attackInput = document.getElementById("AttackInput");
 let decayInput = document.getElementById("DecayInput");
 let releaseInput = document.getElementById("ReleaseInput");
+let opennessFactor = document.getElementById("Openness");
 
 //------------------------Create Web Audio Objects------------------------
 /**
@@ -21,13 +22,21 @@ const audioCtx = new AudioContext();
 
 /**
  * @constant {GainNode} masterGain
- * @description Master gain control for the backing track.
+ * @description Master Gain control for the backing track.
+ * @constant {BiquadFilterNode} masterLowpass
+ * @description Master Low-pass control for the backing track.
  */
 const masterGain = audioCtx.createGain();
 masterGain.gain.value = 0.125; // Set master volume
 document.getElementById("MasterGain").addEventListener("input", (event)=>{
     masterGain.gain.linearRampToValueAtTime(event.target.value, audioCtx.currentTime + 0.4);
-}); // Master Gain control
+}); // Master Gain Control
+const masterLowpass = audioCtx.createBiquadFilter();
+masterLowpass.type = "lowpass";
+masterLowpass.frequency.value = 3800;
+document.getElementById("MasterLowpass").addEventListener("input", (event)=>{
+    masterLowpass.frequency.linearRampToValueAtTime(event.target.value, audioCtx.currentTime + 0.4);
+}); // Master Low-Pass Control
 
 /**
  * @constant {DelayNode} delayNode
@@ -45,7 +54,12 @@ document.getElementById("DelayInput").addEventListener("input", (event)=>{
 document.getElementById("Feedback").addEventListener("input", (event)=>{
     feedbackNode.gain.linearRampToValueAtTime(event.target.value, audioCtx.currentTime + 0.4);
 }); // Delay Feedback control
-// Maybe add a low pass filter to the delayed signal
+const delayLowpass = audioCtx.createBiquadFilter();
+delayLowpass.type = "lowpass";
+delayLowpass.frequency.value = 3000;
+document.getElementById("DelayLowpass").addEventListener("input", (event)=>{
+    delayLowpass.frequency.linearRampToValueAtTime(event.target.value, audioCtx.currentTime + 0.4);
+}); // Delay Lowpass control
 
 //------------------------------Metronome-----------------------------------
 const pulseGain = audioCtx.createGain();
@@ -97,9 +111,11 @@ document.getElementById("SubdivisionGain").addEventListener("input", (event)=>{
 //------------------------------Connections-----------------------------------
 delayNode.connect(feedbackNode);
 feedbackNode.connect(delayNode);
-feedbackNode.connect(masterGain);
+feedbackNode.connect(delayLowpass);
+delayLowpass.connect(masterLowpass);
 pulseGain.connect(masterGain);
 subdivisionGain.connect(masterGain);
+masterLowpass.connect(masterGain);
 masterGain.connect(audioCtx.destination);
 
 //----------------------------Define Variables----------------------------
@@ -250,14 +266,14 @@ const voicings = [
     { voicing: [], totalDistance: undefined },
 ]; // Maybe initialize this with a loop + Should this be inside the chooseVoicing function?
 
-const chooseVoicing2 = ()=>{ // Maybe this should be async?
+const chooseVoicing = ()=>{
     // For each order of voices, make each voice move to the closest unrepresented target tone,
     // calculating and storing in the voicings array the total difference in semitones between 
     // each current voice and its target tone. Then, find which voicing has the least totalDistance,
     // and set each current tone to the corresponding tone of the voicing.
     for (let o = 0; o < 6; o++) { // Choose which nested voiceOrders array
         let newVoicing = [];
-        newVoicing.length = 0; // Is this necessary?
+        newVoicing.length = 0;
         let totalDistance = 0;
         for (let i = 0; i < 3; i++) { // Iterate through the voices in the nested voiceOrders array
             let currentTone = currentVoicing[voiceOrders[o][i]];
@@ -306,44 +322,6 @@ const chooseVoicing2 = ()=>{ // Maybe this should be async?
     currentVoicing = voicings[bestVoicingIndex].voicing;
 };
 
-const chooseVoicing1 = ()=>{
-    let newVoicing = [];
-    //let newVoicingPcs = [];
-    let totalDistance = 0;
-    currentVoicing.forEach((currentTone)=>{
-        let closestTones = [];
-        let difference;
-        // Find the chord tones in their closest octave
-        chordMap[currentChord].forEach((targetTone)=>{
-            for (let n = 0; n < 10; n++) {
-                difference = currentTone - (targetTone + (12*n));
-                //console.log(`difference of ${difference}`);
-                if (difference > -7 && difference < 7) {
-                    closestTones.push(targetTone + (12*n));
-                    break; // Maybe remove break so that if a targetTone is 6 semitones away from the currentTone, both the lower and higher versions will be added to the closestTones array rather than just the lowest.
-                };
-            };
-        });
-        console.log(`closestTones are ${closestTones}`);
-        // Find the closest of the chord tones
-        for (let d = 0, c = false; c == false; d++) {
-            for (let i = 0; i < closestTones.length; i++) {
-                if (((currentTone - closestTones[i]) == d || (currentTone - closestTones[i])*-1 == d) && !Array.from(newVoicing, (x) => x % 12).includes(closestTones[i] % 12)) { // !Array.from(newVoicing, (x) => x % 12).includes(closestTones[i] % 12)  // !newVoicing.includes(closestTones[i])
-                    newVoicing.push(currentTone - (currentTone - closestTones[i]));
-                    totalDistance = totalDistance + d;
-                    c = true;
-                    break;
-                };
-            };
-        };
-    });
-    console.log(`newVoicing Array: ${newVoicing}`);
-    console.log(`totalDistance: ${totalDistance}`);
-    for (let i = 0; i < 3; i++) {
-        currentVoicing[i] = newVoicing[i];
-    };
-};
-
 
 /**
  * @function playNote
@@ -351,7 +329,7 @@ const chooseVoicing1 = ()=>{
  * @param {number} note - The MIDI note number of the frequency to be played.
  */
 const playNote = function (note) {
-    let someVoice = new Voice(audioCtx, mtof(note + transposition), attack, decay, sustainTime, release, 0.8, masterGain, delayNode);
+    let someVoice = new Voice(audioCtx, mtof(note + transposition), attack, decay, sustainTime, release, 0.8, masterLowpass, delayNode);
         someVoice.start();
 };
 
@@ -367,6 +345,8 @@ document.getElementById("StartStop").addEventListener("click", (event)=>{
         clearTimeout(subdTimer); // Stops and clears the timeouts for the metronome and chord playback
         event.target.style.border = "0.1rem solid #04AA6D";
         event.target.innerHTML = "Start";
+        document.getElementById("currentChord").innerText = "x";
+        document.getElementById("upcomingChord").innerText = "x";
         isPlaying = false; // isPlaying is set to false so that parameters can be changed and the playback restarted
         return;
     }; // If track is playing, stops track and prevents the rest of the function from executing.
@@ -391,8 +371,9 @@ document.getElementById("StartStop").addEventListener("click", (event)=>{
     event.target.innerHTML = "Stop";
     isPlaying = true;
     currentChord = selectedChords[0][0];
+    document.getElementById("upcomingChord").innerText = currentChord;
     for (let i = 0; i < 3; i++) {
-        currentVoicing[i] = chordMap[currentChord][i] + 60;
+        currentVoicing[i] = (chordMap[currentChord][i] + 60) + (Math.round(Math.random() * opennessFactor.value) - (opennessFactor.value/2)) * 12; // Add user control of voicing width/openness
     };
         for (let i = 0; i < numBeats; i++) {
             pulseTimer = setTimeout(()=>{
@@ -421,7 +402,7 @@ const playback = function () {
         };
         chooseChord();
         console.log(`Next Chord: ${currentChord}`);
-        chooseVoicing2();
+        chooseVoicing();
         setTimeout(()=>{console.log(`Voices: ${currentVoicing[0]}, ${currentVoicing[1]}, ${currentVoicing[2]}`)}, 50);
     }, duration * 1000);
 };

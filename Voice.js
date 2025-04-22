@@ -37,6 +37,7 @@ export default class Voice {
 
     // Create main oscillator (sine wave by default)
     this.osc = this.context.createOscillator();
+    this.osc.type = "sawtooth";
     this.osc.frequency.setValueAtTime(this.frequency, now);
     this.osc.onended = this.dispose.bind(this); // Auto-cleanup on stop
 
