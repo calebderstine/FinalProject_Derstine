@@ -41,6 +41,11 @@ document.getElementById("MasterLowpassFreq").addEventListener("input", (event)=>
 document.getElementById("MasterLowpassQ").addEventListener("input", (event)=>{
     masterLowpass.Q.linearRampToValueAtTime(event.target.value, audioCtx.currentTime + 0.4);
 }); // Master Low-Pass Q Control
+let bass = 0.3;
+document.getElementById("BassInput").addEventListener("input", (event)=>{
+    bass = event.target.value;
+    console.log(bass);
+}); // Bass Control
 
 /**
  * @constant {DelayNode} delayNode
@@ -334,7 +339,7 @@ const chooseVoicing = ()=>{
  * @param {number} note - The MIDI note number of the frequency to be played.
  */
 const playNote = function (note) {
-    let someVoice = new Voice(audioCtx, mtof(note + transposition), attack, decay, sustainTime, release, 0.8, masterLowpass, delayNode);
+    let someVoice = new Voice(audioCtx, mtof(note + transposition), attack, decay, sustainTime, release, bass, 0.8, masterLowpass, delayNode);
         someVoice.start();
 };
 

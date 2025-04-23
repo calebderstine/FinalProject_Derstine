@@ -14,7 +14,7 @@ export default class Voice {
    * @param {number} maxAmp - The maximum amplitude (typically between 0.0 and 1.0).
    * @param {AudioNode} out - The destination node to connect the voice to.
    */
-  constructor(ctx, freq, attack, decay, sustainTime, release, maxAmp, out1, out2) {
+  constructor(ctx, freq, attack, decay, sustainTime, release, bass, maxAmp, out1, out2) {
     // Store constructor parameters
     this.context = ctx;
     this.frequency = freq;
@@ -22,6 +22,7 @@ export default class Voice {
     this.decay = decay;
     this.sustainTime = sustainTime;
     this.release = release;
+    this.bass = bass;
     this.maxAmp = maxAmp;
     this.output1 = out1; // Oscillators will be routed to the masterLowpass (which goes to masterGain)
     this.output2 = out2; // Oscillators will be routed to the delayNode (which goes to masterLowpass)
@@ -38,26 +39,35 @@ export default class Voice {
     // Create main oscillator
     this.oscSaw = this.context.createOscillator(); // Creates a rich tone with lots of harmonics
     this.oscSine = this.context.createOscillator(); // Reinforces the fundamental
+    this.oscSub = this.context.createOscillator(); // Reinforces the fundamental
     this.oscSaw.type = "sawtooth";
     this.oscSine.type = "sine";
+    this.oscSub.type = "sine";
     this.oscSaw.frequency.setValueAtTime(this.frequency, now);
     this.oscSine.frequency.setValueAtTime(this.frequency, now);
+    this.oscSub.frequency.setValueAtTime((this.frequency)/2, now);
     this.oscSaw.onended = this.dispose.bind(this); // Auto-cleanup on stop
     this.oscSine.onended = this.dispose.bind(this); // Auto-cleanup on stop
+    this.oscSub.onended = this.dispose.bind(this); // Auto-cleanup on stop
 
     // Create gain node for amplitude envelope
+    this.subGain = this.context.createGain();
     this.ampEnv = this.context.createGain();
+    this.subGain.gain.setValueAtTime(this.bass, now);
     this.ampEnv.gain.setValueAtTime(0, now); // Start silent
 
     // Signal routing
     this.oscSaw.connect(this.ampEnv);
     this.oscSine.connect(this.ampEnv);
+    this.oscSub.connect(this.subGain);
+    this.subGain.connect(this.ampEnv);
     this.ampEnv.connect(this.output1);
     this.ampEnv.connect(this.output2);
 
     // Start oscillators
     this.oscSaw.start();
     this.oscSine.start();
+    this.oscSub.start();
 
     // Envelope: Attack → Decay → Sustain → Release
     this.ampEnv.gain.linearRampToValueAtTime(this.maxAmp, now + this.attack); // Attack
@@ -76,6 +86,9 @@ export default class Voice {
     this.oscSine.stop(
       now + this.attack + this.decay + this.sustainTime + this.release + 0.01
     ); // Stop Oscillator
+    this.oscSub.stop(
+      now + this.attack + this.decay + this.sustainTime + this.release + 0.01
+    ); // Stop Oscillator
   };
 
   /**
@@ -90,6 +103,7 @@ export default class Voice {
     // Null references for garbage collection
     this.oscSaw = null;
     this.oscSine = null;
+    this.oscSub = null;
     this.ampEnv = null;
   };
 
