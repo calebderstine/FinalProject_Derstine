@@ -10,7 +10,7 @@
 <body>
     <h1 id="Title">GENERATIVE BACKING TRACK</h1>
     <div id="TimeKey">
-        <p>Time Signature<select name="TimeSig" id="TimeSig">
+        <p>Time Signature <select name="TimeSig" id="TimeSig">
             <option value="1">4/4</option>
             <option value="2">2/4</option>
             <option value="3">3/4</option>
@@ -51,7 +51,7 @@
         <h2>Delay</h2>
         <p>Delay Time <input type="number" id="DelayInput" min="3" max="1000" value="50" step="1"> ms</p>
         <p>Feedback <input type="range" id="Feedback" class="slider" min="0" max="0.7" value="0" step="0.01"></p>
-        <p>Low-pass <input type="range" id="DelayLowpass" class="slider" min="100" max="8000" value="3000" step="10"></p>
+        <p>Low-Pass <input type="range" id="DelayLowpass" class="slider" min="100" max="8000" value="3000" step="10"></p>
     </div>
     <div id="ADSR">
         <h2>ADSR</h2>
@@ -61,7 +61,8 @@
     </div>
     <div id="Master">
         <h2>Master</h2>
-        <p>Low-Pass <input type="range" id="MasterLowpass" class="slider" min="400" max="10000" value="3800" step="10"> </p>
+        <p>Cutoff Freq <input type="range" id="MasterLowpassFreq" class="slider" min="400" max="10000" value="3800" step="10"> </p>
+        <p>Filter Q <input type="range" id="MasterLowpassQ" class="slider" min="-3.4" max="3.4" value="-3.4" step="0.1"> </p>
         <p>Master Gain <input type="range" id="MasterGain" class="slider" min="0" max="0.2" value="0.1" step="0.01"> </p>
         <button type="button" id="StartStop">Start</button>
     </div>
