@@ -23,35 +23,41 @@ export default class Voice {
     this.sustainTime = sustainTime;
     this.release = release;
     this.maxAmp = maxAmp;
-    this.output1 = out1;
-    this.output2 = out2;
+    this.output1 = out1; // Oscillators will be routed to the masterLowpass (which goes to masterGain)
+    this.output2 = out2; // Oscillators will be routed to the delayNode (which goes to masterLowpass)
     this.sustain = 0.8;
-  }
+  };
 
   /**
    * Starts the voice — creates and starts oscillators, builds signal chain,
    * initiates each phase of the ADSR envelope, and stops the oscillator on completion.
    */
-  start() {
+  start () {
     const now = this.context.currentTime;
 
-    // Create main oscillator (sine wave by default)
-    this.osc = this.context.createOscillator();
-    this.osc.type = "sawtooth";
-    this.osc.frequency.setValueAtTime(this.frequency, now);
-    this.osc.onended = this.dispose.bind(this); // Auto-cleanup on stop
+    // Create main oscillator
+    this.oscSaw = this.context.createOscillator(); // Creates a rich tone with lots of harmonics
+    this.oscSine = this.context.createOscillator(); // Reinforces the fundamental
+    this.oscSaw.type = "sawtooth";
+    this.oscSine.type = "sine";
+    this.oscSaw.frequency.setValueAtTime(this.frequency, now);
+    this.oscSine.frequency.setValueAtTime(this.frequency, now);
+    this.oscSaw.onended = this.dispose.bind(this); // Auto-cleanup on stop
+    this.oscSine.onended = this.dispose.bind(this); // Auto-cleanup on stop
 
     // Create gain node for amplitude envelope
     this.ampEnv = this.context.createGain();
     this.ampEnv.gain.setValueAtTime(0, now); // Start silent
 
     // Signal routing
-    this.osc.connect(this.ampEnv);
+    this.oscSaw.connect(this.ampEnv);
+    this.oscSine.connect(this.ampEnv);
     this.ampEnv.connect(this.output1);
     this.ampEnv.connect(this.output2);
 
     // Start oscillators
-    this.osc.start();
+    this.oscSaw.start();
+    this.oscSine.start();
 
     // Envelope: Attack → Decay → Sustain → Release
     this.ampEnv.gain.linearRampToValueAtTime(this.maxAmp, now + this.attack); // Attack
@@ -64,24 +70,27 @@ export default class Voice {
     this.ampEnv.gain.linearRampToValueAtTime(
     0., now + this.attack + this.decay + this.sustainTime + this.release
     ); // Release
-    this.osc.stop(
+    this.oscSaw.stop(
       now + this.attack + this.decay + this.sustainTime + this.release + 0.01
     ); // Stop Oscillator
-    //setTimeout(this.dispose, 10);
-  }
-// Add disposal functionality to the above function.
-
+    this.oscSine.stop(
+      now + this.attack + this.decay + this.sustainTime + this.release + 0.01
+    ); // Stop Oscillator
+  };
 
   /**
    * Cleans up and disconnects all audio nodes once the sound has ended.
    */
-  dispose() {
+  dispose () {
     // Disconnect everything
-    this.osc.disconnect();
-    this.ampEnv.disconnect();
+    // this.oscSaw.disconnect();
+    // this.oscSine.disconnect();
+    // this.ampEnv.disconnect();
 
     // Null references for garbage collection
-    this.osc = null;
+    this.oscSaw = null;
+    this.oscSine = null;
     this.ampEnv = null;
-  }
-}
+  };
+
+};

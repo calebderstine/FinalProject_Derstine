@@ -33,7 +33,7 @@ document.getElementById("MasterGain").addEventListener("input", (event)=>{
 }); // Master Gain Control
 const masterLowpass = audioCtx.createBiquadFilter();
 masterLowpass.type = "lowpass";
-masterLowpass.frequency.value = 3800;
+masterLowpass.frequency.value = 4200;
 masterLowpass.Q.value = -3.4;
 document.getElementById("MasterLowpassFreq").addEventListener("input", (event)=>{
     masterLowpass.frequency.linearRampToValueAtTime(event.target.value, audioCtx.currentTime + 0.4);
@@ -41,7 +41,6 @@ document.getElementById("MasterLowpassFreq").addEventListener("input", (event)=>
 document.getElementById("MasterLowpassQ").addEventListener("input", (event)=>{
     masterLowpass.Q.linearRampToValueAtTime(event.target.value, audioCtx.currentTime + 0.4);
 }); // Master Low-Pass Q Control
-console.log(masterLowpass.Q);
 
 /**
  * @constant {DelayNode} delayNode
@@ -70,7 +69,7 @@ document.getElementById("DelayLowpass").addEventListener("input", (event)=>{
 //------------------------------Metronome-----------------------------------
 const pulseGain = audioCtx.createGain();
 const subdivisionGain = audioCtx.createGain();
-pulseGain.gain.value = 1;
+pulseGain.gain.value = 3; // Master Gain later attenuates this
 subdivisionGain.gain.value = 0;
 
 // Metronome Play Function
