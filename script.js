@@ -10,8 +10,9 @@ let opennessFactor = document.getElementById("Openness");
 
 //------------------------Create Web Audio Objects------------------------
 /**
- * This script will create new voices for each chord change
- * and coordinate the process of choosing chords, choosing the voicing, and timing them right.
+ * This script will create new voices for each chord change and
+ * coordinate the process of choosing chords, choosing voicings,
+ * and timing chord changes and metronome clicks.
  */
 
 /**
@@ -44,18 +45,19 @@ document.getElementById("MasterLowpassQ").addEventListener("input", (event)=>{
 let bass = 0.3;
 document.getElementById("BassInput").addEventListener("input", (event)=>{
     bass = event.target.value;
-    console.log(bass);
-}); // Bass Control
+}); // Bass Control (controls the gain of a sine wave 1 octave lower than a voice's fundamental)
 
 /**
  * @constant {DelayNode} delayNode
- * @description Delay
+ * @description Delay Time control
  * @constant {GainNode} feedbackNode
- * @description Feedback
+ * @description Feedback Gain of delay line
+ * @constant {BiquadFilterNode} delayLowpass
+ * @description Delay Lowpass control
  */
 const delayNode = audioCtx.createDelay();
 const feedbackNode = audioCtx.createGain();
-delayNode.delayTime.value = 0.003; // Set delay time
+delayNode.delayTime.value = 0.250; // Set delay time
 feedbackNode.gain.value = 0; // Set feedback gain
 document.getElementById("DelayInput").addEventListener("input", (event)=>{
     delayNode.delayTime.linearRampToValueAtTime(event.target.value/1000, audioCtx.currentTime + 0.4);
@@ -74,7 +76,7 @@ document.getElementById("DelayLowpass").addEventListener("input", (event)=>{
 //------------------------------Metronome-----------------------------------
 const pulseGain = audioCtx.createGain();
 const subdivisionGain = audioCtx.createGain();
-pulseGain.gain.value = 3; // Master Gain later attenuates this
+pulseGain.gain.value = 2; // Master Gain later attenuates this
 subdivisionGain.gain.value = 0;
 
 // Metronome Play Function
@@ -83,12 +85,12 @@ const playMetronome = function(out){
     source.onended = ()=>{
         source.disconnect();
         source = null;
-    }
+    };
 
     // Attach the decoded audio data to the source node
     source.buffer = metronomeAudioBuffer;
 
-    // Connect the audio source to the master gain (volume control)
+    // Connect the audio source to its respective gain node (either pulseGain or subdivisionGain)
     source.connect(out);
 
     // Start playing the audio immediately
@@ -138,11 +140,12 @@ let decay; // This will be determined by Decay selection.
 let release; // This will be determined by Release selection.
 let sustainTime; // This is determined by the envelope values in order to keep the note duration consistent regardless of ADSR values.
 
-let isPlaying = false;
-let playbackTimer;
-let pulseTimer;
-let subdTimer;
+let isPlaying = false; // Whether the backing track is currently playing
+let playbackTimer; // ID for playback timeout
+let pulseTimer; // ID for pulse timeout
+let subdTimer; // ID for subdivision timeout
 
+//----------------------------Chord Progression Functionality----------------------------
 const allChords = [
     "i", "I", "bII", "ii*", "ii", "II", "III", "III+", "iii", "iv", "IV", "v", "V", "VI", "vi", "VII", "vii*"
 ];
@@ -181,11 +184,63 @@ let currentChord;
 let randomIndex1;
 let randomIndex2;
 
-let currentVoicing = [];
+// Determine Next Chord In Progression
+const chooseChord = ()=> {
+    if (selectedChords[0].includes(currentChord)) {
+        randomIndex1 = Math.floor(Math.random() * 3); // Assigns a random integer from 0 to 2; decides if the chord will be tonic, subdominant, or dominant
+        randomIndex2 = Math.floor(selectedChords[randomIndex1].length * Math.random()); // Assigns a random integer from 0 to 1 less than the length of the array corresponding to randomIndex1; chooses a chord from within either the tonic, subdominant, or dominant array
+        currentChord = selectedChords[randomIndex1][randomIndex2]; // currentChord is assigned to the new chord decided by randomIndex1 and randomIndex2
+    } else if (selectedChords[1].includes(currentChord)) {
+        randomIndex1 = Math.floor(Math.random() * 2 + 1); // Assigns a random integer from 1 to 2; decides if the chord will be subdominant or dominant
+        randomIndex2 = Math.floor(selectedChords[randomIndex1].length * Math.random()); // Assigns a random integer from 0 to 1 less than the length of the array corresponding to randomIndex1; chooses a chord from within either the subdominant or dominant array
+        currentChord = selectedChords[randomIndex1][randomIndex2];
+    } else if (selectedChords[2].includes(currentChord)) {
+        randomIndex1 = Math.floor(Math.random() * 2) * 2; // Assigns either a 0 or a 2; decides if the chord will be dominant or tonic
+        randomIndex2 = Math.floor(selectedChords[randomIndex1].length * Math.random()); // Assigns a random integer from 0 to 1 less than the length of the array corresponding to randomIndex1; chooses a chord from within either the tonic or dominant array
+        currentChord = selectedChords[randomIndex1][randomIndex2];
+    }
+    document.getElementById("currentChord").innerText = document.getElementById("upcomingChord").innerText;
+    document.getElementById("upcomingChord").innerText = currentChord;
+};
+
+// User Chord Selection
+document.getElementById("ChordSelection").addEventListener("click", (event)=>{
+    let functIndex; // Determines which of the three arrays inside of selectedChords the chord will go to
+    if (allChords.includes(`${event.target.innerHTML}`) && isPlaying == false) {
+        switch (event.target.innerHTML) {
+            case 'i': functIndex = 0; break;
+            case 'I': functIndex = 0; break;
+            case 'bII': functIndex = 1; break;
+            case 'ii*': functIndex = 1; break;
+            case 'ii': functIndex = 1; break;
+            case 'II': functIndex = 1; break;
+            case 'III': functIndex = 0; break;
+            case 'III+': functIndex = 2; break;
+            case 'iii': functIndex = 0; break;
+            case 'iv': functIndex = 1; break;
+            case 'IV': functIndex = 1; break;
+            case 'v': functIndex = 2; break;
+            case 'V': functIndex = 2; break;
+            case 'VI': functIndex = 0; break;
+            case 'vi': functIndex = 0; break;
+            case 'VII': functIndex = 2; break;
+            case 'vii*': functIndex = 2; break;
+        }
+        if (selectedChords[functIndex].includes(`${event.target.innerHTML}`)) {
+            selectedChords[functIndex].splice(selectedChords[functIndex].indexOf(event.target.innerHTML), 1);
+            event.target.style.backgroundColor = "#FFFAF0";
+            event.target.style.color = "#000000";
+        } else {
+            selectedChords[functIndex].push(event.target.innerHTML);
+            event.target.style.backgroundColor = "#696969";
+            event.target.style.color = "#FFFFFF";
+        }
+    };
+});
 
 /**
  * @function updateTimeSig
- * @description Updates the time signature and number of beats per measure based on the selection from the HTML dropdown menu.
+ * @description Updates the time signature, number of beats per measure, and subdivision of beats based on the selection from the HTML dropdown menu.
  */
 document.getElementById("TimeSig").addEventListener("input", ()=>{
     switch (document.getElementById("TimeSig").value) {
@@ -227,6 +282,7 @@ document.getElementById("TimeSig").addEventListener("input", ()=>{
     }
 });
 
+//---------------------------------Play Note---------------------------------
 /**
  * @function mtof
  * @description Converts a MIDI note number to its corresponding frequency in Hz.
@@ -237,25 +293,19 @@ const mtof = function (midi) {
   return 440 * Math.pow(2, (midi - 69) / 12);
 };
 
-const chooseChord = ()=> {
-    if (selectedChords[0].includes(currentChord)) {
-        randomIndex1 = Math.floor(Math.random() * 3); // Assigns a random integer from 0 to 2; decides if the chord will be tonic, subdominant, or dominant
-        randomIndex2 = Math.floor(selectedChords[randomIndex1].length * Math.random()); // Assigns a random integer from 0 to 1 less than the length of the array corresponding to randomIndex1; chooses a chord from within either the tonic, subdominant, or dominant array
-        currentChord = selectedChords[randomIndex1][randomIndex2]; // currentChord is assigned to the new chord decided by randomIndex1 and randomIndex2
-    } else if (selectedChords[1].includes(currentChord)) {
-        randomIndex1 = Math.floor(Math.random() * 2 + 1); // Assigns a random integer from 1 to 2; decides if the chord will be subdominant or dominant
-        randomIndex2 = Math.floor(selectedChords[randomIndex1].length * Math.random()); // Assigns a random integer from 0 to 1 less than the length of the array corresponding to randomIndex1; chooses a chord from within either the subdominant or dominant array
-        currentChord = selectedChords[randomIndex1][randomIndex2];
-    } else if (selectedChords[2].includes(currentChord)) {
-        randomIndex1 = Math.floor(Math.random() * 2) * 2; // Assigns either a 0 or a 2; decides if the chord will be dominant or tonic
-        randomIndex2 = Math.floor(selectedChords[randomIndex1].length * Math.random()); // Assigns a random integer from 0 to 1 less than the length of the array corresponding to randomIndex1; chooses a chord from within either the tonic or dominant array
-        currentChord = selectedChords[randomIndex1][randomIndex2];
-    }
-    document.getElementById("currentChord").innerText = document.getElementById("upcomingChord").innerText;
-    document.getElementById("upcomingChord").innerText = currentChord;
+/**
+ * @function playNote
+ * @description Creates a new oscillator with a specified frequency and other parameters.
+ * @param {number} note - The MIDI note number of the frequency to be played.
+ */
+const playNote = function (note) {
+    let someVoice = new Voice(audioCtx, mtof(note + transposition), attack, decay, sustainTime, release, bass, 0.8, masterLowpass, delayNode);
+        someVoice.start();
 };
 
 //--------------------------------Voice Leading--------------------------------
+
+let currentVoicing = [];
 
 const voiceOrders = [
     [0, 1, 2],
@@ -264,9 +314,8 @@ const voiceOrders = [
     [1, 0, 2],
     [2, 0, 1],
     [2, 1, 0],
-]; // Represents all possible orders of three voices. Each element of each nested array represents an index for/of currentChord
+]; // Represents all unique orders of three voices. Each element of each nested array represents an index for/of currentChord
 
-// This is where each possible voicing and its total distance will be stored
 const voicings = [
     { voicing: [], totalDistance: undefined },
     { voicing: [], totalDistance: undefined },
@@ -274,36 +323,35 @@ const voicings = [
     { voicing: [], totalDistance: undefined },
     { voicing: [], totalDistance: undefined },
     { voicing: [], totalDistance: undefined },
-]; // Maybe initialize this with a loop + Should this be inside the chooseVoicing function?
+]; // This is where each possible voicing and its total distance (between each current tone and its target tone) will be stored
 
 const chooseVoicing = ()=>{
-    // For each order of voices, make each voice move to the closest unrepresented target tone,
-    // calculating and storing in the voicings array the total difference in semitones between 
-    // each current voice and its target tone. Then, find which voicing has the least totalDistance,
-    // and set each current tone to the corresponding tone of the voicing.
-    for (let o = 0; o < 6; o++) { // Choose which nested voiceOrders array
+    /* In each unique order of voices, each voice moves to the closest unrepresented target tone,
+    then the total distance moved in semitones between all three voices is calculated and stored
+    in the voicings array. Then the current voicing is set to the voicing with the least totalDistance. */
+    for (let o = 0; o < 6; o++) { // Determines which nested voiceOrders array is used (which order of voices)
         let newVoicing = [];
         newVoicing.length = 0;
         let totalDistance = 0;
-        for (let i = 0; i < 3; i++) { // Iterate through the voices in the nested voiceOrders array
+        for (let i = 0; i < 3; i++) { // Iterate through the elements (voice indexes) in the nested voiceOrders array
             let currentTone = currentVoicing[voiceOrders[o][i]];
             let closestTones = [];
             let difference;
+
             // Find the chord tones in their closest octave
             chordMap[currentChord].forEach((targetTone)=>{ // For each tone of the chord we're moving to
                 for (let n = 0; n < 10; n++) {
                     difference = currentTone - (targetTone + (12*n)); // Starting from the lowest MIDI octave, iterates through the first ten octaves
-                    //console.log(`difference of ${difference}`);
                     if (difference > -7 && difference < 7) { // Checks if the target tone in the current octave is within a tritone of the current tone; The closest version of a given pitch class is never more than 6 semitones away
                         closestTones.push(targetTone + (12*n));
                     }; 
                 };
             }); // Compiles an array of the target chord tones in the octaves closest to the current tone; Will typically be 3, but may be 4 in the case that the distance is 6 semitones to a target chord tone
-            console.log(`closestTones are ${closestTones}`);
+            
             // Find the closest of the chord tones
             for (let d = 0, c = false; c == false; d++) { // Starting from a distance of 0 semitones and increasing by 1 each time, checks if each target tone is that number of semitones away from the current tone, adding it to the newVoicing array if so and skipping the rest of the for loop
                 for (let i = 0; i < closestTones.length; i++) {
-                    if (((currentTone - closestTones[i]) == d || (currentTone - closestTones[i])*-1 == d) && !Array.from(newVoicing, (x) => x % 12).includes(closestTones[i] % 12)) { // !Array.from(newVoicing, (x) => x % 12).includes(closestTones[i] % 12)  // !newVoicing.includes(closestTones[i])
+                    if (((currentTone - closestTones[i]) == d || (currentTone - closestTones[i])*-1 == d) && !Array.from(newVoicing, (x) => x % 12).includes(closestTones[i] % 12)) {
                         newVoicing.push(currentTone - (currentTone - closestTones[i]));
                         totalDistance = totalDistance + d;
                         c = true;
@@ -316,8 +364,7 @@ const chooseVoicing = ()=>{
         voicings[o].voicing = newVoicing;
         voicings[o].totalDistance = totalDistance;
     };
-    // Find array with least totalDistance and set currentVoicing to it
-    console.log(voicings);
+    // Find array (voicing) with least totalDistance and set currentVoicing to it
     let smallestDistance = Math.min(
         voicings[0].totalDistance,
         voicings[1].totalDistance,
@@ -326,27 +373,17 @@ const chooseVoicing = ()=>{
         voicings[4].totalDistance,
         voicings[5].totalDistance
     );
-    console.log(smallestDistance);
     const hasSmallestDistance = (element) => element.totalDistance == smallestDistance;
     let bestVoicingIndex = voicings.findIndex(hasSmallestDistance);
     currentVoicing = voicings[bestVoicingIndex].voicing;
 };
 
-
+//---------------------------------Track Playback---------------------------------
 /**
- * @function playNote
- * @description Creates a new oscillator with a specified frequency and other parameters.
- * @param {number} note - The MIDI note number of the frequency to be played.
- */
-const playNote = function (note) {
-    let someVoice = new Voice(audioCtx, mtof(note + transposition), attack, decay, sustainTime, release, bass, 0.8, masterLowpass, delayNode);
-        someVoice.start();
-};
-
-/**
- * @function startTrack
- * @description Will use a for loop to run through the process of choosing a chord, choosing the voicing and assigning notes to each voice, and starting the oscillators before repeating after the specified duration.
- * This function will call other functions for each specific task.
+ * @function
+ * @description Starts or stops playback
+ * On start, ensures all requirements are met before defining parameters and beginning the playback loop.
+ * On stop, clears all timeouts and resets chord display.
  */
 document.getElementById("StartStop").addEventListener("click", (event)=>{
     if (isPlaying) {
@@ -390,10 +427,16 @@ document.getElementById("StartStop").addEventListener("click", (event)=>{
                 playMetronome(pulseGain);
               }, (duration/numBeats) * i * 1000)
         };
-        console.log(currentChord);
+        console.log(`Next Chord: ${currentChord}`);
+        console.log(`Voices: ${currentVoicing[0]}, ${currentVoicing[1]}, ${currentVoicing[2]}`)
         playback();
 });
 
+/**
+ * @function playback
+ * @description Utilizes timeouts to schedule metronome clicks, chord change decisions,
+ * voicing decisions, and the playing of notes in time and on beat.
+ */
 const playback = function () {
     playbackTimer = setTimeout(()=>{
         playback();
@@ -416,38 +459,3 @@ const playback = function () {
         setTimeout(()=>{console.log(`Voices: ${currentVoicing[0]}, ${currentVoicing[1]}, ${currentVoicing[2]}`)}, 50);
     }, duration * 1000);
 };
-
-//User Chord Selection Functionality
-document.getElementById("ChordSelection").addEventListener("click", (event)=>{
-    let functIndex;
-    if (allChords.includes(`${event.target.innerHTML}`) && isPlaying == false) {
-        switch (event.target.innerHTML) {
-            case 'i': functIndex = 0; break;
-            case 'I': functIndex = 0; break;
-            case 'bII': functIndex = 1; break;
-            case 'ii*': functIndex = 1; break;
-            case 'ii': functIndex = 1; break;
-            case 'II': functIndex = 1; break;
-            case 'III': functIndex = 0; break;
-            case 'III+': functIndex = 2; break;
-            case 'iii': functIndex = 0; break;
-            case 'iv': functIndex = 1; break;
-            case 'IV': functIndex = 1; break;
-            case 'v': functIndex = 2; break;
-            case 'V': functIndex = 2; break;
-            case 'VI': functIndex = 0; break;
-            case 'vi': functIndex = 0; break;
-            case 'VII': functIndex = 2; break;
-            case 'vii*': functIndex = 2; break;
-        }
-        if (selectedChords[functIndex].includes(`${event.target.innerHTML}`)) {
-            selectedChords[functIndex].splice(selectedChords[functIndex].indexOf(event.target.innerHTML), 1);
-            event.target.style.backgroundColor = "#FFFAF0";
-            event.target.style.color = "#000000";
-        } else {
-            selectedChords[functIndex].push(event.target.innerHTML);
-            event.target.style.backgroundColor = "#696969";
-            event.target.style.color = "#FFFFFF";
-        }
-    };
-});
